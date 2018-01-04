@@ -104,38 +104,40 @@ parseActiveJob = do
     userid       <- parseUserId <* many1 space
     state        <- parseActiveState <* many1 space
     nprocs       <- number <* many1 space
-    _            <- many1 $ oneOf "-:0123456789days" -- skip remaining time
-    _            <- many1 space
+    many1 $ oneOf "-:0123456789days" -- skip remaining time
+    many1 space
     starttime    <- parseDateTime
     return $ ActiveJob jobid jobCondition userid state nprocs starttime
 
 parseActiveJobSummary :: Parser (Int, Int, Int, Int)
 parseActiveJobSummary = do
     activeCpus  <- number *> string " active jobs" *> many1 space *> number
-    totalCpus   <- string " of " *> number <* string " processors in use by local jobs "
-    _           <- many1 (oneOf "()%.1234567890") *> eol
+    totalCpus   <- string " of " *> number
+    string " processors in use by local jobs "
+    many1 (oneOf "()%.1234567890") *> eol
     activeNodes <- many1 space *> number
-    totalNodes  <- string " of " *> number <* string " nodes active"
-    _           <- many1 space *> many1 (oneOf "()%.1234567890")
+    totalNodes  <- string " of " *> number
+    string " nodes active"
+    many1 space *> many1 (oneOf "()%.1234567890")
     return (activeCpus, totalCpus, activeNodes, totalNodes)
 
 parseActiveJobSection :: Parser [ActiveJob]
 parseActiveJobSection = do
-    _       <- eol
-    _       <- string "active jobs"
-    _       <- many1 $ char '-'
-    _       <- eol
-    _       <- string "JOBID"
-    _       <- many1 space
-    _       <- string "USERNAME"
-    _       <- many1 space
-    _       <- string "STATE"
-    _       <- many1 space
-    _       <- string "PROCS"
-    _       <- many1 space
-    _       <- string "REMAINING"
-    _       <- many1 space
-    _       <- string "STARTTIME"
-    _       <- eol
-    _       <- eol
+    eol
+    string "active jobs"
+    many1 $ char '-'
+    eol
+    string "JOBID"
+    many1 space
+    string "USERNAME"
+    many1 space
+    string "STATE"
+    many1 space
+    string "PROCS"
+    many1 space
+    string "REMAINING"
+    many1 space
+    string "STARTTIME"
+    eol
+    eol
     sepBy parseActiveJob eol
