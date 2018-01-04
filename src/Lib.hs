@@ -89,30 +89,21 @@ parseUserId = many1 alphaNum
 -- XXX: Convert to a datetime data structure
 parseDateTime :: Parser String
 parseDateTime = do
-    dayOfWeek  <- many1 letter
-    _          <- many1 space
-    month      <- many1 letter
-    _          <- many1 space
-    dayOfMonth <- many1 digit
-    _          <- many1 space
-    hour       <- many1 digit
-    _          <- char ':'
-    minute     <- many1 digit
-    _          <- char ':'
+    dayOfWeek  <- many1 letter <* many1 space
+    month      <- many1 letter <* many1 space
+    dayOfMonth <- many1 digit  <* many1 space
+    hour       <- many1 digit  <* char ':'
+    minute     <- many1 digit  <* char ':'
     second     <- many1 digit
     return $ dayOfWeek ++ " " ++ month ++ " " ++ dayOfMonth ++ " " ++ hour ++ ":" ++ minute ++ ":" ++ second
 
 parseActiveJob :: Parser ActiveJob
 parseActiveJob = do
     jobid        <- parseJobId
-    jobCondition <- optionMaybe parseJobCondition
-    _            <- many1 space
-    userid       <- parseUserId
-    _            <- many1 space
-    state        <- parseActiveState
-    _            <- many1 space
-    nprocs       <- number
-    _            <- many1 space
+    jobCondition <- optionMaybe parseJobCondition <* many1 space
+    userid       <- parseUserId <* many1 space
+    state        <- parseActiveState <* many1 space
+    nprocs       <- number <* many1 space
     _            <- many1 $ oneOf "-:0123456789days" -- skip remaining time
     _            <- many1 space
     starttime    <- parseDateTime
@@ -120,23 +111,12 @@ parseActiveJob = do
 
 parseActiveJobSummary :: Parser (Int, Int, Int, Int)
 parseActiveJobSummary = do
-    _ <- number
-    _ <- string " active jobs"
-    _ <- many1 space
-    activeCpus <- number
-    _ <- string " of "
-    totalCpus <- number
-    _ <- string " processors in use by local jobs "
-    _ <- many1 $ oneOf "()%.1234567890"
-    -- _ <- many space
-    _ <- eol
-    _ <- many1 space
-    activeNodes <- number
-    _ <- string " of "
-    totalNodes <- number
-    _ <- string " nodes active"
-    _ <- many1 space
-    _ <- many1 $ oneOf "()%.1234567890"
+    activeCpus  <- number *> string " active jobs" *> many1 space *> number
+    totalCpus   <- string " of " *> number <* string " processors in use by local jobs "
+    _           <- many1 (oneOf "()%.1234567890") *> eol
+    activeNodes <- many1 space *> number
+    totalNodes  <- string " of " *> number <* string " nodes active"
+    _           <- many1 space *> many1 (oneOf "()%.1234567890")
     return (activeCpus, totalCpus, activeNodes, totalNodes)
 
 parseActiveJobSection :: Parser [ActiveJob]
