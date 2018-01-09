@@ -1,5 +1,9 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Lib where
 
+import qualified Data.Csv           as Csv
+import           GHC.Generics       (Generic)
 import           Text.Parsec
 import           Text.Parsec.Char
 import           Text.Parsec.String
@@ -7,37 +11,57 @@ import           Text.Parsec.String
 -- documented at http://docs.adaptivecomputing.com/maui/commands/showq.php
 
 data ActiveState
-    = Running | Suspended deriving (Eq, Show)
+    = Running
+    | Suspended
+    deriving (Eq, Generic, Show)
 
 data IdleBlockedState
-    = Idle | UserHold | SystemHold | Deferred | NotQueued deriving (Eq, Show)
+    = Idle
+    | UserHold
+    | SystemHold
+    | Deferred
+    | NotQueued
+    deriving (Eq, Generic, Show)
 
 data JobCondition
     = ViolatesUsageLimit
     | BackfilledAndPreemptible
     | BackfilledAndNotPreemptible
     | NotBackfilledAndPreemptible
-    deriving (Eq, Show)
+    deriving (Eq, Generic, Show)
 
 type NotQueued = String
 type UserId = String
 
 data ActiveJob = ActiveJob
-  { jobId        :: String
-  , jobCondition :: Maybe JobCondition
-  , userId       :: UserId
-  , activeState  :: ActiveState
-  , procs        :: Int
-  , startTime    :: String
-  } deriving (Eq, Show)
+    { jobId        :: String
+    , jobCondition :: Maybe JobCondition
+    , userId       :: UserId
+    , activeState  :: ActiveState
+    , procs        :: Int
+    , startTime    :: String
+    } deriving (Eq, Generic, Show)
 
-data Showq = Showq
-    { activeJobs  :: [ActiveJob]
-    , activeCpus  :: Int
+data JobSummary = JobSummary
+    { activeCpus  :: Int
     , totalCpus   :: Int
     , activeNodes :: Int
     , totalNodes  :: Int
-    } deriving (Eq, Show)
+    } deriving (Eq, Generic, Show)
+
+data Showq = Showq
+    { activeJobs :: [ActiveJob]
+    , jobSummary :: JobSummary
+    } deriving (Eq, Generic, Show)
+
+-- instance Csv.FromRecord Showq
+-- instance Csv.ToRecord Showq
+
+-- instance Csv.FromRecord ActiveJob
+-- instance Csv.ToRecord ActiveJob
+
+instance Csv.FromRecord JobSummary
+instance Csv.ToRecord JobSummary
 
 number :: Parser Int
 number = do
@@ -109,8 +133,8 @@ parseActiveJob = do
     starttime    <- parseDateTime
     return $ ActiveJob jobid jobCondition userid state nprocs starttime
 
-parseActiveJobSummary :: Parser (Int, Int, Int, Int)
-parseActiveJobSummary = do
+parseJobSummary :: Parser JobSummary
+parseJobSummary = do
     activeCpus  <- number *> string " active jobs" *> many1 space *> number
     totalCpus   <- string " of " *> number
     string " processors in use by local jobs "
@@ -119,13 +143,11 @@ parseActiveJobSummary = do
     totalNodes  <- string " of " *> number
     string " nodes active"
     many1 space *> many1 (oneOf "()%.1234567890")
-    return (activeCpus, totalCpus, activeNodes, totalNodes)
+    return $ JobSummary activeCpus totalCpus activeNodes totalNodes
 
 parseActiveJobSection :: Parser [ActiveJob]
 parseActiveJobSection = do
-    eol
-    string "active jobs"
-    many1 $ char '-'
+    string "active jobs------------------------"
     eol
     string "JOBID"
     many1 space
@@ -140,4 +162,14 @@ parseActiveJobSection = do
     string "STARTTIME"
     eol
     eol
-    sepBy parseActiveJob eol
+    endBy parseActiveJob eol
+
+showQParser :: Parser Showq
+showQParser = do
+    eol
+    activeJobs <- parseActiveJobSection
+    eol
+    jobSummary <- parseJobSummary
+    skipMany anyChar
+    eof
+    return $ Showq activeJobs jobSummary
