@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Lib where
 
@@ -54,13 +55,20 @@ data Showq = Showq
     , jobSummary :: JobSummary
     } deriving (Eq, Generic, Show)
 
--- instance Csv.FromRecord Showq
--- instance Csv.ToRecord Showq
+instance Csv.ToField ActiveState where
+    toField Running   = "Running"
+    toField Suspended = "Suspended"
 
--- instance Csv.FromRecord ActiveJob
--- instance Csv.ToRecord ActiveJob
+instance Csv.ToRecord IdleBlockedState
 
-instance Csv.FromRecord JobSummary
+instance Csv.ToField JobCondition where
+    toField ViolatesUsageLimit          = "ViolatesUsageLimit"
+    toField BackfilledAndPreemptible    = "BackfilledAndPreemptible"
+    toField BackfilledAndNotPreemptible = "BackfilledAndNotPreemptible"
+    toField NotBackfilledAndPreemptible = "NotBackfilledAndPreemptible"
+
+instance Csv.ToRecord ActiveJob
+
 instance Csv.ToRecord JobSummary
 
 number :: Parser Int

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e5fa5857b6101581e2ce3b0a5b23a3f29f2fb760868b31c52777a3ef20cb1e2c
+-- hash: 977cdee1a26eed3270977c4c987d3e9a505ecda1eb0f5c9470c39cb9b4346e15
 
 name:           acibparser
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , cassava
     , parsec
   exposed-modules:
@@ -47,6 +48,7 @@ executable acibparser-exe
   build-depends:
       acibparser
     , base >=4.7 && <5
+    , bytestring
     , cassava
     , parsec
   other-modules:
@@ -62,6 +64,7 @@ test-suite acibparser-test
   build-depends:
       acibparser
     , base >=4.7 && <5
+    , bytestring
     , cassava
     , hspec
     , parsec

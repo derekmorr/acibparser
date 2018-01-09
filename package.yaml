@@ -23,7 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - parsec
 - cassava
-
+- bytestring
 
 library:
   source-dirs: src
